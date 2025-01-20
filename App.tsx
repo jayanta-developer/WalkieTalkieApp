@@ -12,22 +12,27 @@ interface SignalData {
 const App: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [frequency, setFrequency] = useState<string>('20');
-  const [userId, setUserId] = useState<string>(''); // Assign unique ID per user
+  const [userId, setUserId] = useState<string>(''); 
   const [connected, setConnected] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
 
-  // Initialize audioRecorderPlayer with useRef to persist the instance
   const audioRecorderPlayer = useRef<AudioRecorderPlayer | null>(null);
 
   useEffect(() => {
-    // Initialize the audioRecorderPlayer here
     audioRecorderPlayer.current = new AudioRecorderPlayer();
 
-    const newSocket = io('http://your-server-url:3000');
+    const newSocket = io('http://localhost:3000', {
+      transports: ['websocket'],
+    });
+
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
       console.log('Connected to server');
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('Connection error:', err);
     });
 
     newSocket.on('disconnect', () => {
@@ -54,7 +59,7 @@ const App: React.FC = () => {
     }
 
     try {
-      const path = 'audio_record.mp4'; // You can customize the file name
+      const path = 'audio_record.mp4';
       setIsRecording(true);
       await audioRecorderPlayer.current.startRecorder(path);
       audioRecorderPlayer.current.addRecordBackListener((e) => {
@@ -75,7 +80,7 @@ const App: React.FC = () => {
       if (socket && frequency) {
         const signalData: SignalData = {
           frequency: frequency,
-          signal: result, // This will be the file path
+          signal: result,
           userId: userId,
         };
         socket.emit('audioSignal', signalData);
